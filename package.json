@@ -1,0 +1,64 @@
+{
+  "name": "starter-ts",
+  "type": "module",
+  "version": "0.0.3",
+  "packageManager": "pnpm@7.26.2",
+  "description": "Starter template for TypeScript library",
+  "author": "wxm",
+  "license": "MIT",
+  "homepage": "https://github.com/qq15725/starter-ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qq15725/starter-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qq15725/starter-ts/issues"
+  },
+  "keywords": [
+    "starter",
+    "template",
+    "typescript"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "types/index.d.ts",
+  "browser": "dist/index.js",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./types/*",
+        "./types/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "lint": "eslint src",
+    "test": "vitest --no-threads --no-isolate",
+    "build": "vite build && tsc --project tsconfig.build.json",
+    "version": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
+    "release": "bumpp package.json --commit \"release: v%s\" --push --all --tag"
+  },
+  "devDependencies": {
+    "@qq15725/eslint-config": "^1.1.0",
+    "@types/node": "^18.14.0",
+    "bumpp": "^8.2.1",
+    "conventional-changelog-cli": "^2.2.2",
+    "eslint": "^8.34.0",
+    "typescript": "^4.9.5",
+    "vite": "^4.1.2",
+    "vitest": "^0.28.5"
+  }
+}
