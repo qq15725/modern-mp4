@@ -1,18 +1,18 @@
 {
-  "name": "starter-ts",
+  "name": "modern-mp4",
   "type": "module",
-  "version": "0.0.3",
-  "packageManager": "pnpm@7.26.2",
-  "description": "Starter template for TypeScript library",
+  "version": "0.0.0",
+  "packageManager": "pnpm@8.2.0",
+  "description": "WebCodec + mp4box.js = you.mp4",
   "author": "wxm",
   "license": "MIT",
-  "homepage": "https://github.com/qq15725/starter-ts",
+  "homepage": "https://github.com/qq15725/modern-mp4",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qq15725/starter-ts.git"
+    "url": "git+https://github.com/qq15725/modern-mp4.git"
   },
   "bugs": {
-    "url": "https://github.com/qq15725/starter-ts/issues"
+    "url": "https://github.com/qq15725/modern-mp4/issues"
   },
   "keywords": [
     "starter",
@@ -53,12 +53,17 @@
   },
   "devDependencies": {
     "@qq15725/eslint-config": "^1.1.0",
+    "@types/dom-webcodecs": "^0.1.8",
     "@types/node": "^18.14.0",
     "bumpp": "^8.2.1",
     "conventional-changelog-cli": "^2.2.2",
     "eslint": "^8.34.0",
+    "mp4box": "^0.5.2",
     "typescript": "^4.9.5",
     "vite": "^4.1.2",
     "vitest": "^0.28.5"
+  },
+  "peerDependencies": {
+    "mp4box": "*"
   }
 }

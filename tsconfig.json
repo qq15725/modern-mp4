@@ -8,6 +8,9 @@
       "dom",
       "dom.iterable"
     ],
+    "types": [
+      "@types/dom-webcodecs"
+    ],
     "skipLibCheck": true,
     "allowJs": false, /* 允许 javascript 文件被编译。 */
     "jsx": "preserve", /* 指定 JSX 代码生成: 'preserve', 'react-native', or 'react'。 */
