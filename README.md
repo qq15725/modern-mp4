@@ -36,7 +36,7 @@ const output = await encode({
   frames: [
     // data: string | CanvasImageSource | VideoFrame | AudioData
     { data: '/example1.png', duration: 3000 },
-    { data: '/example1.png', duration: 3000 },
+    { data: '/example2.png', duration: 3000 },
   ],
 })
 
