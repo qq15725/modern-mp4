@@ -1,7 +1,7 @@
 {
   "name": "modern-mp4",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "packageManager": "pnpm@8.2.0",
   "description": "WebCodec + mp4box.js = you.mp4",
   "author": "wxm",
