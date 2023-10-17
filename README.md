@@ -22,6 +22,9 @@
 
 ```shell
 npm i modern-mp4
+
+# peerDependencies
+npm i mp4box
 ```
 
 ## Usage
