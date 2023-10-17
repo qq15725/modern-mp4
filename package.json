@@ -45,10 +45,11 @@
     "types"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "vite docs",
     "lint": "eslint src",
     "test": "vitest --no-threads --no-isolate",
     "build": "vite build && tsc --project tsconfig.build.json",
+    "build:docs": "vite build docs",
     "version": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
     "release": "bumpp package.json --commit \"release: v%s\" --push --all --tag"
   },

@@ -2,8 +2,77 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Docs</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>modern-mp4</title>
+  <meta name="description" content="WebCodec + mp4box.js = you.mp4">
+  <meta name="keywords" content="gif, encoder, decode, animation, browser">
+  <meta name="viewport" content="width=device-width">
+  <meta property="og:title" content="modern-mp4">
+  <meta property="og:url" content="https://github.com/qq15725/modern-mp4">
+  <meta property="og:description" content="WebCodec + mp4box.js = you.mp4">
+  <meta property="og:type" content="website">
+  <style>
+    body {
+      background-color: #EEE;
+    }
+
+    header, footer, main {
+      width: 600px;
+      margin: 0 auto;
+    }
+  </style>
 </head>
+
 <body>
+<header>
+  <h1>modern-mp4</h1>
+  <p>WebCodec + mp4box.js = you.mp4</p>
+  <a href="https://github.com/qq15725/modern-mp4" target="_blank">Download on GitHub</a>
+</header>
+
+<main>
+  <h2>Demo</h2>
+  <div style="position: relative;">
+    <p>
+      <label>Select multiple images</label>
+      <input type="file" multiple accept="image/png, image/jpeg, image/gif" />
+    </p>
+    <video style="width: 300px;" controls autoplay loop></video>
+  </div>
+</main>
+
+<script type="module">
+  import { encode } from '../src'
+
+  const video = document.querySelector('video')
+
+  async function render(urls) {
+    const buffer = await encode({
+      width: 500,
+      height: 500,
+      frames: urls.map(data => ({ data, duration: 3000 })),
+      audio: false,
+    })
+    const blob = new Blob([buffer], { type: 'video/mp4' })
+    video.src = URL.createObjectURL(blob)
+  }
+
+  Array.from(document.querySelectorAll('input')).forEach(input => {
+    input.addEventListener('input', async () => {
+      if (input.type === 'file') {
+        const urls = []
+        for (let len = input.files.length, i = 0; i < len; i++) {
+          urls.push(URL.createObjectURL(input.files[i]))
+        }
+        render(urls)
+      }
+    })
+  })
+
+  render([
+    '/example.jpg',
+    '/example.png',
+  ])
+</script>
 </body>
 </html>
