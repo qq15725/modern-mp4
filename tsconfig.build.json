@@ -7,6 +7,7 @@
     "emitDeclarationOnly": true,
   },
   "include": [
+    "mp4box.d.ts",
     "src/**/*"
   ]
 }

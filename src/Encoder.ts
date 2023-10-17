@@ -31,16 +31,16 @@ export class Encoder {
 
   readonly file = createFile()
 
-  protected _audioReady = false
-  protected _videoReady = false
-
   protected _videoEncoder = this._createVideoEncoder()
-  protected _videoChunks: Array<EncodedVideoChunk> = []
   protected _videoTrackId?: number
 
   protected _audioEncoder = this._options.audio !== false ? this._createAudioEncoder() : undefined
-  protected _audioChunks: Array<EncodedAudioChunk> = []
   protected _audioTrackId?: number
+
+  protected _encodedChunks: Array<{
+    trackId: number
+    chunk: EncodedAudioChunk | EncodedVideoChunk
+  }> = []
 
   get videoConfig() {
     const options = this._options
@@ -92,38 +92,21 @@ export class Encoder {
     }
   }
 
-  protected _addSample(chunk: EncodedAudioChunk | EncodedVideoChunk) {
-    if (chunk instanceof EncodedAudioChunk) {
-      this._audioReady = true
-
-      if (this._videoReady) {
-        this.file.addSample(this._audioTrackId!, ...this._chunkToSample(chunk))
-      } else {
-        this._audioChunks.push(chunk)
-      }
-
-      if (this._videoChunks.length) {
-        this._videoChunks.forEach(chunk => {
-          this.file.addSample(this._videoTrackId!, ...this._chunkToSample(chunk))
-        })
-        this._videoChunks = []
-      }
-    } else if (chunk instanceof EncodedVideoChunk) {
-      this._videoReady = true
-
-      if (this._audioReady || !this._audioEncoder) {
-        this.file.addSample(this._videoTrackId!, ...this._chunkToSample(chunk))
-      } else {
-        this._videoChunks.push(chunk)
-      }
-
-      if (this._audioChunks.length) {
-        this._audioChunks.forEach(chunk => {
-          this.file.addSample(this._audioTrackId!, ...this._chunkToSample(chunk))
-        })
-        this._audioChunks = []
-      }
+  protected _addSample(trackId: number, chunk: EncodedAudioChunk | EncodedVideoChunk) {
+    if (
+      !this._videoTrackId
+      || (this._audioEncoder && !this._audioTrackId)
+    ) {
+      this._encodedChunks.push({ trackId, chunk })
+      return
     }
+
+    this.file.addSample(trackId, ...this._chunkToSample(chunk))
+
+    this._encodedChunks.forEach(res => {
+      this.file.addSample(res.trackId, ...this._chunkToSample(res.chunk))
+    })
+    this._encodedChunks = []
   }
 
   protected _chunkToSample(
@@ -159,7 +142,7 @@ export class Encoder {
           })
         }
 
-        this._addSample(chunk)
+        this._addSample(this._videoTrackId!, chunk)
       },
     })
 
@@ -185,7 +168,7 @@ export class Encoder {
           })
         }
 
-        this._addSample(chunk)
+        this._addSample(this._audioTrackId!, chunk)
       },
     })
 
