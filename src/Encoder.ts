@@ -1,4 +1,5 @@
 import { BoxParser, DataStream, createFile } from 'mp4box'
+import { SUPPORTS_AUDIO_ENCODER, SUPPORTS_VIDEO_ENCODER } from './utils'
 import type { SampleOptions } from 'mp4box'
 
 export interface EncoderOptions {
@@ -28,7 +29,7 @@ export class Encoder {
     },
   }
 
-  file = createFile()
+  readonly file = createFile()
 
   protected _audioReady = false
   protected _videoReady = false
@@ -36,18 +37,59 @@ export class Encoder {
   protected _videoEncoder = this._createVideoEncoder()
   protected _videoChunks: Array<EncodedVideoChunk> = []
   protected _videoTrackId?: number
-  protected _encodeQueueSize = 0
 
-  get encodeQueueSize() { return this._encodeQueueSize }
-
-  protected _audioEncoder = this.options.audio ? this._createAudioEncoder() : undefined
+  protected _audioEncoder = this._options.audio !== false ? this._createAudioEncoder() : undefined
   protected _audioChunks: Array<EncodedAudioChunk> = []
   protected _audioTrackId?: number
 
+  get videoConfig() {
+    const options = this._options
+    const defaultOptions = Encoder.DEFAULT_OPTIONS.video
+    return {
+      codec: options.codec ?? defaultOptions.codec,
+      framerate: options.fps ?? defaultOptions.fps,
+      // hardwareAcceleration: 'prefer-hardware',
+      bitrate: options.bitrate,
+      width: options.width,
+      height: options.height,
+      alpha: 'discard',
+      avc: { format: 'avc' },
+    }
+  }
+
+  get audioConfig() {
+    const options = this._options.audio !== false ? this._options.audio : undefined
+    const defaultOptions = Encoder.DEFAULT_OPTIONS.audio
+    return {
+      codec: options?.codec === 'aac' ? defaultOptions.codec : 'opus',
+      sampleRate: options?.sampleRate ?? defaultOptions.sampleRate,
+      numberOfChannels: options?.channelCount ?? defaultOptions.channelCount,
+      bitrate: defaultOptions.bitrate,
+    }
+  }
+
+  async isConfigSupported() {
+    try {
+      return Boolean((await VideoEncoder.isConfigSupported(this.videoConfig)).supported)
+        && (
+          this._options.audio === false
+          || Boolean((await AudioEncoder.isConfigSupported(this.audioConfig)).supported)
+        )
+    } catch (error) {
+      return false
+    }
+  }
+
   constructor(
-    public options: EncoderOptions,
+    protected _options: EncoderOptions,
   ) {
-    //
+    if (!SUPPORTS_VIDEO_ENCODER) {
+      throw new Error('The current environment does not support VideoEncoder')
+    }
+
+    if (_options.audio !== false && !SUPPORTS_AUDIO_ENCODER) {
+      throw new Error('The current environment does not support AudioEncoder')
+    }
   }
 
   protected _addSample(chunk: EncodedAudioChunk | EncodedVideoChunk) {
@@ -101,8 +143,7 @@ export class Encoder {
   }
 
   protected _createVideoEncoder(): VideoEncoder {
-    const options = this.options
-    const defaultOptions = Encoder.DEFAULT_OPTIONS.video
+    const options = this._options
 
     const encoder = new VideoEncoder({
       error: (error: DOMException) => console.warn(error),
@@ -122,23 +163,13 @@ export class Encoder {
       },
     })
 
-    encoder.configure({
-      codec: options.codec ?? defaultOptions.codec,
-      framerate: options.fps ?? defaultOptions.fps,
-      // hardwareAcceleration: 'prefer-hardware',
-      bitrate: options.bitrate,
-      width: options.width,
-      height: options.height,
-      alpha: 'discard',
-      avc: { format: 'avc' },
-    })
+    encoder.configure(this.videoConfig)
 
     return encoder
   }
 
   protected _createAudioEncoder(): AudioEncoder {
-    const options = this.options.audio as Record<string, any>
-    const defaultOptions = Encoder.DEFAULT_OPTIONS.audio
+    const options = this._options.audio as Record<string, any>
 
     const encoder = new AudioEncoder({
       error: (error: DOMException) => console.warn(error),
@@ -158,12 +189,7 @@ export class Encoder {
       },
     })
 
-    encoder.configure({
-      codec: options.codec === 'aac' ? defaultOptions.codec : 'opus',
-      sampleRate: options.sampleRate ?? defaultOptions.sampleRate,
-      numberOfChannels: options.channelCount ?? defaultOptions.channelCount,
-      bitrate: defaultOptions.bitrate,
-    })
+    encoder.configure(this.audioConfig)
 
     return encoder
   }
@@ -225,12 +251,10 @@ export class Encoder {
       data.close()
     } else if (data instanceof VideoFrame) {
       this._videoEncoder.encode(data, options)
-      if (this._videoEncoder.encodeQueueSize > this._encodeQueueSize) {
-        this._encodeQueueSize = this._videoEncoder.encodeQueueSize
-      }
       data.close()
     } else {
-      this.encode(new VideoFrame(data, options), options)
+      const { keyFrame = false, ...restOptions } = options ?? {}
+      this.encode(new VideoFrame(data, restOptions), { keyFrame })
     }
   }
 

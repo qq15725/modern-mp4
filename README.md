@@ -17,3 +17,29 @@
     <img src="https://img.shields.io/npm/l/modern-mp4.svg" alt="License">
   </a>
 </p>
+
+## Install
+
+```shell
+npm i modern-mp4
+```
+
+## Usage
+
+```ts
+import { encode } from 'modern-mp4'
+
+const output = await encode({
+  width: 1280,
+  height: 720,
+  audio: false,
+  frames: [
+    // data: string | CanvasImageSource | VideoFrame | AudioData
+    { data: '/example1.png', duration: 3000 },
+    { data: '/example1.png', duration: 3000 },
+  ],
+})
+
+const blob = new Blob([output], { type: 'image/mp4' })
+window.open(URL.createObjectURL(blob))
+```
