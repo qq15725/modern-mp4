@@ -29,10 +29,12 @@ npm i mp4box
 
 ## Usage
 
+### Encode
+
 ```ts
 import { encode } from 'modern-mp4'
 
-const output = await encode({
+const blob = await encode({
   width: 1280,
   height: 720,
   audio: false,
@@ -43,6 +45,23 @@ const output = await encode({
   ],
 })
 
-const blob = new Blob([output], { type: 'image/mp4' })
 window.open(URL.createObjectURL(blob))
+```
+
+### Decode
+
+```ts
+import { decode } from 'modern-mp4'
+
+const infoWithFrames = await decode({
+  // string | Blob | BufferSource | Array<BufferSource> | readableStream<BufferSource>
+  data: './example.mp4',
+  audio: false,
+  // framerate: 10,
+  // onInfo: info => console.log(info),
+  // onFrame: frame => { console.log(frame) },
+  // onProgress: (current, total) => console.log(`decode frame ${current}/${total}`),
+})
+
+console.log(infoWithFrames)
 ```
