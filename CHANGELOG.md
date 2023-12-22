@@ -1,3 +1,12 @@
+# [0.1.0](https://github.com/qq15725/modern-mp4/compare/v0.0.3...v0.1.0) (2023-12-22)
+
+
+### Features
+
+* decode ([7db7d71](https://github.com/qq15725/modern-mp4/commit/7db7d71239167436955214e702c7c884436a3909))
+
+
+
 ## [0.0.3](https://github.com/qq15725/modern-mp4/compare/v0.0.2...v0.0.3) (2023-10-17)
 
 

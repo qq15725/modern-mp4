@@ -1,7 +1,7 @@
 {
   "name": "modern-mp4",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "packageManager": "pnpm@8.2.0",
   "description": "Encode and decode mp4 frames in the browser, streaming",
   "author": "wxm",
