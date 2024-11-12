@@ -8,7 +8,8 @@ export function createReadableStream<T>(source: T | Array<T> | ReadableStream<T>
         for (let len = source.length, i = 0; i < len; i++) {
           controler.enqueue(source[i])
         }
-      } else {
+      }
+      else {
         controler.enqueue(source)
       }
       controler.close()
@@ -26,7 +27,7 @@ export function readStream<T extends ReadableStream>(
   },
 ) {
   let stoped = false
-  async function run() {
+  async function run(): Promise<void> {
     const reader = stream.getReader()
     // eslint-disable-next-line no-unmodified-loop-condition
     while (!stoped) {

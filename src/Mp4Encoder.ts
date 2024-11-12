@@ -1,13 +1,13 @@
-import {
-  Mp4EncodeTransformer,
-  Mp4MuxTransformer,
-} from './transformers'
-import { readStream } from './utils'
 import type {
   Mp4EncodeTransformerInput,
   Mp4EncodeTransformerOptions,
   Mp4MuxTransformerOptions,
 } from './transformers'
+import {
+  Mp4EncodeTransformer,
+  Mp4MuxTransformer,
+} from './transformers'
+import { readStream } from './utils'
 
 export interface Mp4EncoderOptions extends Mp4EncodeTransformerOptions, Mp4MuxTransformerOptions {
   //
@@ -49,7 +49,7 @@ export class Mp4Encoder {
   }
 
   flush(): Promise<Blob> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       let result: ArrayBuffer
       readStream(this.readable, {
         onRead: _result => result = _result,

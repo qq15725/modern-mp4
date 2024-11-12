@@ -40,7 +40,7 @@ export interface Mp4EncodeTransformerOptions {
 }
 
 export function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => resolve(img)
     img.onerror = () => resolve(img)
@@ -59,7 +59,7 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
   protected _videoEncoder = new VideoEncoder({
     error: error => console.error('Failed to VideoEncoder', error),
     output: (chunk, meta) => {
-      this._rsControler?.enqueue({ type: 'video', chunk, meta })
+      this._rsControler?.enqueue({ type: 'video', chunk, meta: meta! })
       this._updateProgress()
     },
   })
@@ -79,7 +79,9 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
           this._options.audio === false
           || Boolean((await AudioEncoder.isConfigSupported(this._getAudioEncoderConfig())).supported)
         )
-    } catch (error) {
+    }
+    catch (error) {
+      console.warn(error)
       return false
     }
   }
@@ -95,14 +97,15 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
   })
 
   writable = new WritableStream<Mp4EncodeTransformerInput>({
-    write: async input => {
+    write: async (input) => {
       if (this._rsCancelled) {
         this.writable.abort()
       }
       await this._encode(input)
       if (input instanceof AudioData) {
         this._audioQueueSize++
-      } else {
+      }
+      else {
         this._videoQueueSize++
       }
     },
@@ -136,25 +139,31 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     if (input instanceof AudioData) {
       this._audioEncoder.encode(input)
       input.close()
-    } else {
+    }
+    else {
       const { data, ...options } = input
       if (data instanceof VideoFrame) {
         this._videoEncoder.encode(data, options)
         this._wsFrameTimestamp += data.duration ?? 0
         data.close()
-      } else if (typeof data === 'string') {
+      }
+      else if (typeof data === 'string') {
         return this._encode({ data: await loadImage(data), ...options })
-      } else {
+      }
+      else {
         const {
           keyFrame = this._wsFrameTimestamp === 1,
           ...frameInit
         } = options as Record<string, any>
-        if (typeof frameInit.duration === 'undefined') frameInit.duration = 1
-        if (typeof frameInit.timestamp === 'undefined') frameInit.timestamp = this._wsFrameTimestamp
+        if (typeof frameInit.duration === 'undefined')
+          frameInit.duration = 1
+        if (typeof frameInit.timestamp === 'undefined')
+          frameInit.timestamp = this._wsFrameTimestamp
         const frame = new VideoFrame(data, frameInit)
         if (data instanceof ImageBitmap) {
           data.close()
-        } else {
+        }
+        else {
           this._wsLastCanvasImageSource = data as any
         }
         return this._encode({

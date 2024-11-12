@@ -1,8 +1,3 @@
-import {
-  Mp4DecodeTransformer,
-  Mp4DemuxTransformer,
-} from './transformers'
-import { readStream } from './utils'
 import type { MP4Info } from 'mp4box'
 import type {
   Mp4DecodeTransformerOptions,
@@ -10,6 +5,11 @@ import type {
   Mp4DecodeTransformerOutputVideoFrame,
   Mp4DemuxTransformerOptions,
 } from './transformers'
+import {
+  Mp4DecodeTransformer,
+  Mp4DemuxTransformer,
+} from './transformers'
+import { readStream } from './utils'
 
 export interface Mp4DecoderOptions extends Mp4DemuxTransformerOptions, Mp4DecodeTransformerOptions {
   videoFrames?: boolean
@@ -54,11 +54,11 @@ export class Mp4Decoder {
   }
 
   flush(): Promise<Mp4DecoderFlushResult> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const frames: Array<Mp4DecodeTransformerOutput> = []
       const videoFrames: Array<Mp4DecodeTransformerOutputVideoFrame> = []
       readStream(this.readable, {
-        onRead: frame => {
+        onRead: (frame) => {
           switch (frame.type) {
             case 'video':
               if (this._videoFrames !== false) {

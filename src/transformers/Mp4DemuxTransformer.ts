@@ -1,5 +1,5 @@
-import { createFile } from 'mp4box'
 import type { MP4ArrayBuffer, MP4File, MP4Info, Sample } from 'mp4box'
+import { createFile } from 'mp4box'
 
 export interface Mp4DemuxTransformerOutputReady {
   type: 'ready'
@@ -32,7 +32,7 @@ export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransfo
   protected _rsCancelled = false
   protected _wsOffset = 0
 
-  get info() { return this._file.getInfo() as MP4Info }
+  get info(): MP4Info { return this._file.getInfo() as MP4Info }
 
   readable = new ReadableStream<Mp4DemuxTransformerOutput>({
     start: controler => this._rsControler = controler,
@@ -44,7 +44,7 @@ export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransfo
   })
 
   writable = new WritableStream<BufferSource>({
-    write: input => {
+    write: (input) => {
       if (this._rsCancelled) {
         this.writable.abort()
         return
@@ -52,7 +52,8 @@ export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransfo
       let buffer: MP4ArrayBuffer
       if (ArrayBuffer.isView(input)) {
         buffer = input.buffer as any
-      } else {
+      }
+      else {
         buffer = input as any
       }
       buffer.fileStart = this._wsOffset
@@ -63,7 +64,7 @@ export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransfo
       this._file.flush()
       this._rsControler?.close()
       requestIdleCallback(() => {
-        this.info.tracks.forEach(track => {
+        this.info.tracks.forEach((track) => {
           this._file.releaseUsedSamples(track.id, track.nb_samples)
         })
       })
@@ -76,11 +77,11 @@ export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransfo
   ) {
     const file = createFile()
 
-    file.onReady = info => {
-      info.videoTracks.forEach(track => {
+    file.onReady = (info) => {
+      info.videoTracks.forEach((track) => {
         file.setExtractionOptions(track.id, 'video', { nbSamples: 100 })
       })
-      info.videoTracks.forEach(track => {
+      info.videoTracks.forEach((track) => {
         file.setExtractionOptions(track.id, 'audio', { nbSamples: 100 })
       })
       this._options.onInfo?.(info)

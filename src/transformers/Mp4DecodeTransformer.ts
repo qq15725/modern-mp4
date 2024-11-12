@@ -1,6 +1,6 @@
-import { DataStream } from 'mp4box'
 import type { MP4AudioTrack, MP4VideoTrack, Sample } from 'mp4box'
 import type { Mp4DemuxTransformerOutput } from './Mp4DemuxTransformer'
+import { DataStream } from 'mp4box'
 
 export interface Mp4DecodeTransformerOutputVideoFrame {
   type: 'video'
@@ -73,7 +73,7 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
         visibleRect: rawFrame.visibleRect,
         timescale: this._videoTrack?.timescale ?? 1,
       } as Mp4DecodeTransformerOutputVideoFrame
-      createImageBitmap(rawFrame).then(data => {
+      createImageBitmap(rawFrame).then((data) => {
         frame.data = data
         this._rsControler?.enqueue(frame)
         this._options.onFrame?.(frame)
@@ -100,7 +100,7 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
   })
 
   writable = new WritableStream<Mp4DecodeTransformerInput>({
-    write: async chunk => {
+    write: async (chunk) => {
       if (this._rsCancelled) {
         this.writable.abort()
         return
@@ -140,14 +140,16 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
               for (let len = samples.length, i = 0; i < len; i++) {
                 const sample = samples[i]
                 this._samples.push(sample)
-                if (sample.is_sync) this._videoCurrentSampleIndex = offset + i
+                if (sample.is_sync)
+                  this._videoCurrentSampleIndex = offset + i
                 if (this._skippedVideoSample(
                   sample.cts / sample.timescale * 1_000,
                   sample.duration / sample.timescale * 1_000,
                 )) {
                   continue
                 }
-                if (i === 0) sample.cts = 0
+                if (i === 0)
+                  sample.cts = 0
                 const init = this._toEncodedVideoChunkInit(sample)
                 let duration = init.duration!
                 for (let j = this._videoCurrentSampleIndex; j < (offset + i); j++) {
@@ -225,13 +227,15 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
   }
 
   protected _toVideoDecoderDescription(track: any | undefined): Uint8Array | undefined {
-    if (!track) return undefined
+    if (!track)
+      return undefined
     for (const entry of track.mdia.minf.stbl.stsd.entries) {
       if (entry.avcC || entry.hvcC) {
         const stream = new DataStream(undefined, 0, DataStream.BIG_ENDIAN)
         if (entry.avcC) {
           entry.avcC.write(stream)
-        } else {
+        }
+        else {
           entry.hvcC.write(stream)
         }
         return new Uint8Array(stream.buffer, 8) // Remove the box header.

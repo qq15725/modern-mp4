@@ -1,32 +1,20 @@
-import { basename, resolve } from 'path'
+import { basename, resolve } from 'node:path'
 import { defineConfig } from 'vite'
-import { browser, exports, module, name } from './package.json'
+import { browser, name } from './package.json'
 
 const resolvePath = (str: string) => resolve(__dirname, str)
 
 export default defineConfig({
   build: {
     lib: {
+      formats: ['umd'],
+      fileName: (format) => {
+        if (format === 'umd')
+          return basename(browser)
+        return `${name}.${format}`
+      },
       entry: resolvePath('./src/index.ts'),
-    },
-    rollupOptions: {
-      external: ['mp4box'],
-      output: [
-        {
-          format: 'es',
-          entryFileNames: basename(module),
-        },
-        {
-          format: 'umd',
-          entryFileNames: basename(browser),
-          name: name.replace(/-(\w)/ig, (_, v) => v.toUpperCase()),
-          globals: { mp4box: 'MP4Box' },
-        },
-        {
-          format: 'cjs',
-          entryFileNames: basename(exports['.'].require),
-        },
-      ],
+      name: name.replace(/-(\w)/g, (_, v) => v.toUpperCase()),
     },
   },
 })

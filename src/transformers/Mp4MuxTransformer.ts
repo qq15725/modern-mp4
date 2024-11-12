@@ -1,6 +1,6 @@
-import { BoxParser, DataStream, createFile } from 'mp4box'
-import type { Mp4EncodeTransformerOutput } from './Mp4EncodeTransformer'
 import type { MP4Info, SampleOptions } from 'mp4box'
+import type { Mp4EncodeTransformerOutput } from './Mp4EncodeTransformer'
+import { BoxParser, createFile, DataStream } from 'mp4box'
 
 export interface Mp4MuxTransformerOptions {
   width?: number
@@ -24,7 +24,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
   protected _videoTrackId?: number
   protected _audioTrackId?: number
 
-  get info() { return this._file.getInfo() as MP4Info }
+  get info(): MP4Info { return this._file.getInfo() as MP4Info }
 
   readable = new ReadableStream<ArrayBuffer>({
     start: controler => this._rsControler = controler,
@@ -35,7 +35,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
   })
 
   writable = new WritableStream<Mp4MuxTransformerInput>({
-    write: input => {
+    write: (input) => {
       if (this._rsCancelled) {
         this.writable.abort()
         return
@@ -67,7 +67,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
       this._rsControler?.enqueue(stream.buffer)
       this._rsControler?.close()
       requestIdleCallback(() => {
-        this.info.tracks.forEach(track => {
+        this.info.tracks.forEach((track) => {
           this._file.releaseUsedSamples(track.id, track.nb_samples)
         })
         this._file.mdats = []
@@ -106,11 +106,11 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
       language: audioLanguage || audioTrack?.language,
       hdlr: 'soun',
       type: (audioCodec || audioTrack?.codec) === 'aac' ? 'mp4a' : 'Opus',
-      description: this._toESDSBox(meta.decoderConfig?.description),
+      description: this._toESDSBox(meta.decoderConfig!.description!),
     })
   }
 
-  protected _toESDSBox(config: ArrayBuffer | ArrayBufferView) {
+  protected _toESDSBox(config: ArrayBuffer | ArrayBufferView): BoxParser.esdsBox {
     const configlen = config.byteLength
     const buf = new Uint8Array([
       0x00, // version 0
