@@ -1,3 +1,14 @@
+## [0.1.1](https://github.com/qq15725/modern-mp4/compare/v0.1.0...v0.1.1) (2024-11-12)
+
+
+### Features
+
+* isConfigSupported ([1abc864](https://github.com/qq15725/modern-mp4/commit/1abc8641ed3a49941cfa99926d30eec08db0630e))
+* isConfigSupported ([fc61335](https://github.com/qq15725/modern-mp4/commit/fc613353bdfd24aedbd0be892b9fceb0cc263b03))
+* up deps ([102e0b2](https://github.com/qq15725/modern-mp4/commit/102e0b2afc3298563d70f12d894a0a8b2ddb5c6c))
+
+
+
 # [0.1.0](https://github.com/qq15725/modern-mp4/compare/v0.0.3...v0.1.0) (2023-12-22)
 
 
