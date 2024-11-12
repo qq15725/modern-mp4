@@ -72,12 +72,55 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     },
   })
 
-  async isConfigSupported(): Promise<boolean> {
+  protected static _getVideoEncoderConfig(options: Mp4EncodeTransformerOptions): VideoEncoderConfig {
+    const { width, height, framerate, videoCodec, videoBitrate, info } = options
+    const videoTrack = info?.videoTracks[0]
+    if (info && videoTrack) {
+      const duration = (info.duration / info.timescale) * 1_000
+      return {
+        codec: videoCodec || 'avc1.4D0032',
+        framerate: framerate || Math.ceil(1_000 / (duration / videoTrack.nb_samples)),
+        bitrate: videoBitrate || videoTrack.bitrate!,
+        width: width || videoTrack.track_width,
+        height: height || videoTrack.track_height,
+        avc: { format: 'avc' },
+      }
+    }
+    return {
+      codec: videoCodec || 'avc1.4D0032',
+      framerate: framerate || 30,
+      bitrate: videoBitrate || 2_000_000,
+      width: width || 0,
+      height: height || 0,
+      avc: { format: 'avc' },
+    }
+  }
+
+  protected static _getAudioEncoderConfig(options: Mp4EncodeTransformerOptions): AudioEncoderConfig {
+    const { audioCodec, audioBitrate, audioSampleRate, audioChannelCount, info } = options
+    const audioTrack = info?.audioTracks[0]
+    if (audioTrack) {
+      return {
+        codec: (audioCodec || audioTrack.codec) === 'aac' ? 'mp4a.40.2' : 'opus',
+        sampleRate: audioSampleRate || audioTrack.audio.sample_rate,
+        numberOfChannels: audioChannelCount || audioTrack.audio.channel_count,
+        bitrate: audioBitrate || audioTrack.bitrate,
+      }
+    }
+    return {
+      codec: (audioCodec || 'aac') === 'aac' ? 'mp4a.40.2' : 'opus',
+      sampleRate: audioSampleRate || 48_000,
+      numberOfChannels: audioChannelCount || 2,
+      bitrate: audioBitrate || 128_000,
+    }
+  }
+
+  static async isConfigSupported(options: Mp4EncodeTransformerOptions = {}): Promise<boolean> {
     try {
-      return Boolean((await VideoEncoder.isConfigSupported(this._getVideoEncoderConfig())).supported)
+      return Boolean((await VideoEncoder.isConfigSupported(this._getVideoEncoderConfig(options))).supported)
         && (
-          this._options.audio === false
-          || Boolean((await AudioEncoder.isConfigSupported(this._getAudioEncoderConfig())).supported)
+          options.audio === false
+          || Boolean((await AudioEncoder.isConfigSupported(this._getAudioEncoderConfig(options))).supported)
         )
     }
     catch (error) {
@@ -131,8 +174,8 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
   constructor(
     protected _options: Mp4EncodeTransformerOptions = {},
   ) {
-    this._videoEncoder.configure(this._getVideoEncoderConfig())
-    this._audioEncoder.configure(this._getAudioEncoderConfig())
+    this._videoEncoder.configure(Mp4EncodeTransformer._getVideoEncoderConfig(_options))
+    this._audioEncoder.configure(Mp4EncodeTransformer._getAudioEncoderConfig(_options))
   }
 
   protected async _encode(input: Mp4EncodeTransformerInput): Promise<void> {
@@ -201,25 +244,6 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
       width: width || 0,
       height: height || 0,
       avc: { format: 'avc' },
-    }
-  }
-
-  protected _getAudioEncoderConfig(): AudioEncoderConfig {
-    const { audioCodec, audioBitrate, audioSampleRate, audioChannelCount, info } = this._options
-    const audioTrack = info?.audioTracks[0]
-    if (audioTrack) {
-      return {
-        codec: (audioCodec || audioTrack.codec) === 'aac' ? 'mp4a.40.2' : 'opus',
-        sampleRate: audioSampleRate || audioTrack.audio.sample_rate,
-        numberOfChannels: audioChannelCount || audioTrack.audio.channel_count,
-        bitrate: audioBitrate || audioTrack.bitrate,
-      }
-    }
-    return {
-      codec: (audioCodec || 'aac') === 'aac' ? 'mp4a.40.2' : 'opus',
-      sampleRate: audioSampleRate || 48_000,
-      numberOfChannels: audioChannelCount || 2,
-      bitrate: audioBitrate || 128_000,
     }
   }
 }

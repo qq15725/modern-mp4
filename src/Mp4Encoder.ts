@@ -40,8 +40,8 @@ export class Mp4Encoder {
       .pipeThrough(new Mp4MuxTransformer(options))
   }
 
-  isConfigSupported(): Promise<boolean> {
-    return this._encoder.isConfigSupported()
+  static isConfigSupported(options?: Mp4EncoderOptions): Promise<boolean> {
+    return Mp4EncodeTransformer.isConfigSupported(options)
   }
 
   encode(frame: Mp4EncoderEncodeSource): void {
