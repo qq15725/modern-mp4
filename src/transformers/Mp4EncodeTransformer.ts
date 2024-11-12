@@ -222,28 +222,4 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     const current = this._videoEncoder.encodeQueueSize + this._audioEncoder.encodeQueueSize
     this._options.onProgress?.(total - current, total)
   }
-
-  protected _getVideoEncoderConfig(): VideoEncoderConfig {
-    const { width, height, framerate, videoCodec, videoBitrate, info } = this._options
-    const videoTrack = info?.videoTracks[0]
-    if (info && videoTrack) {
-      const duration = (info.duration / info.timescale) * 1_000
-      return {
-        codec: videoCodec || 'avc1.4D0032',
-        framerate: framerate || Math.ceil(1_000 / (duration / videoTrack.nb_samples)),
-        bitrate: videoBitrate || videoTrack.bitrate!,
-        width: width || videoTrack.track_width,
-        height: height || videoTrack.track_height,
-        avc: { format: 'avc' },
-      }
-    }
-    return {
-      codec: videoCodec || 'avc1.4D0032',
-      framerate: framerate || 30,
-      bitrate: videoBitrate || 2_000_000,
-      width: width || 0,
-      height: height || 0,
-      avc: { format: 'avc' },
-    }
-  }
 }
