@@ -1,7 +1,7 @@
 {
   "name": "modern-mp4",
   "type": "module",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packageManager": "pnpm@9.9.0",
   "description": "Encode and decode mp4 frames in the browser, streaming",
   "author": "wxm",
@@ -40,8 +40,8 @@
     }
   },
   "files": [
-    "mp4box.d.ts",
-    "dist"
+    "dist",
+    "mp4box.d.ts"
   ],
   "scripts": {
     "build": "vite build && unbuild",
@@ -53,6 +53,9 @@
     "release": "bumpp package.json --commit \"release: v%s\" --push --all --tag",
     "typecheck": "tsc --noEmit",
     "prepare": "simple-git-hooks"
+  },
+  "peerDependencies": {
+    "mp4box": "*"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.8.0",
@@ -68,9 +71,6 @@
     "unbuild": "^2.0.0",
     "vite": "^5.4.11",
     "vitest": "^2.1.4"
-  },
-  "peerDependencies": {
-    "mp4box": "*"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged"

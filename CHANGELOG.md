@@ -1,3 +1,9 @@
+## <small>0.1.2 (2024-12-20)</small>
+
+* fix:fallback to setTimeout if rIC isn't available ([9dfb2c9](https://github.com/qq15725/modern-mp4/commit/9dfb2c9))
+
+
+
 ## [0.1.1](https://github.com/qq15725/modern-mp4/compare/v0.1.0...v0.1.1) (2024-11-12)
 
 
