@@ -1,3 +1,12 @@
+export function requestIdleCallback(cb: () => void): void {
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(cb)
+  }
+  else {
+    window.setTimeout(cb, 1)
+  }
+}
+
 export function createReadableStream<T>(source: T | Array<T> | ReadableStream<T>): ReadableStream<T> {
   if (source instanceof ReadableStream) {
     return source

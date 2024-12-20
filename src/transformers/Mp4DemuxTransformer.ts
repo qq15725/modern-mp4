@@ -1,5 +1,6 @@
 import type { MP4ArrayBuffer, MP4File, MP4Info, Sample } from 'mp4box'
 import { createFile } from 'mp4box'
+import { requestIdleCallback } from '../utils'
 
 export interface Mp4DemuxTransformerOutputReady {
   type: 'ready'

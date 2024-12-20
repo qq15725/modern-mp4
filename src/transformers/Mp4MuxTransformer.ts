@@ -1,6 +1,7 @@
 import type { MP4Info, SampleOptions } from 'mp4box'
 import type { Mp4EncodeTransformerOutput } from './Mp4EncodeTransformer'
 import { BoxParser, createFile, DataStream } from 'mp4box'
+import { requestIdleCallback } from '../utils'
 
 export interface Mp4MuxTransformerOptions {
   width?: number
