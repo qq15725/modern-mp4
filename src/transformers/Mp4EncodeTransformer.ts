@@ -67,7 +67,9 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
   protected _audioEncoder = new AudioEncoder({
     error: error => console.error('Failed to AudioEncoder', error),
     output: (chunk, meta) => {
-      this._rsControler?.enqueue({ type: 'audio', chunk, meta })
+      if (meta) {
+        this._rsControler?.enqueue({ type: 'audio', chunk, meta })
+      }
       this._updateProgress()
     },
   })

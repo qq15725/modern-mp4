@@ -155,7 +155,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
     // eslint-disable-next-line new-cap
     const esdsBox = new BoxParser.esdsBox(buf.byteLength)
     ;(esdsBox as any).hdr_size = 0
-    esdsBox.parse(new DataStream(buf, 0, DataStream.BIG_ENDIAN))
+    esdsBox.parse(new DataStream(buf.buffer, 0, DataStream.BIG_ENDIAN))
     return esdsBox
   }
 
