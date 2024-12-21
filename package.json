@@ -67,8 +67,8 @@
     "lint-staged": "^15.2.10",
     "mp4box": "^0.5.3",
     "simple-git-hooks": "^2.11.1",
-    "typescript": "^5.6.3",
-    "unbuild": "^2.0.0",
+    "typescript": "^5.7.2",
+    "unbuild": "^3.0.1",
     "vite": "^5.4.11",
     "vitest": "^2.1.4"
   },
