@@ -48,6 +48,35 @@ const blob = await encode({
 window.open(URL.createObjectURL(blob))
 ```
 
+### Encoder
+
+```ts
+import { MP4Encoder } from 'modern-mp4'
+
+const encoder = new MP4Encoder({
+  width: 1280,
+  height: 720,
+  audio: false,
+  framerate: 30,
+})
+
+await encoder.encode({
+  data: '/example1.png',
+  timestamp: 0,
+  duration: 33,
+})
+
+await encoder.encode({
+  data: '/example1.png',
+  timestamp: 33,
+  duration: 66,
+})
+
+const blob = await encoder.flush()
+
+window.open(URL.createObjectURL(blob))
+```
+
 ### Decode
 
 ```ts
