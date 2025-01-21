@@ -1,3 +1,18 @@
+# [0.2.0](https://github.com/qq15725/modern-mp4/compare/v0.1.2...v0.2.0) (2025-01-21)
+
+
+### Bug Fixes
+
+* type ([a2a86c9](https://github.com/qq15725/modern-mp4/commit/a2a86c9a39e010083b4b4ac657847a92d1233798))
+
+
+### Features
+
+* optimize default bitrate ([3317909](https://github.com/qq15725/modern-mp4/commit/3317909529793f6826f1b5265043e86d93743659))
+* up deps, rename `Mp4` to `MP4` ([6f87e23](https://github.com/qq15725/modern-mp4/commit/6f87e23046e3fca1b3f9987038c148ac8a8a8874))
+
+
+
 ## <small>0.1.2 (2024-12-20)</small>
 
 * fix:fallback to setTimeout if rIC isn't available ([9dfb2c9](https://github.com/qq15725/modern-mp4/commit/9dfb2c9))
