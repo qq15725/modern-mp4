@@ -74,8 +74,27 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
     },
   })
 
-  protected static _getVideoEncoderConfig(options: MP4EncodeTransformerOptions): VideoEncoderConfig {
-    const { width, height, framerate, videoCodec, videoBitrate, info } = options
+  static getDefaultVideoBitrate(width: number, height: number, framerate: number): number {
+    const baseBitrateMap = {
+      '720p': 3_000_000, // 3 Mbps
+      '1080p': 6_000_000, // 6 Mbps
+      '1440p': 12_000_000, // 12 Mbps
+      '2160p': 20_000_000, // 20 Mbps
+    }
+    const resolutionLabel
+      = width <= 1280 && height <= 720
+        ? '720p'
+        : width <= 1920 && height <= 1080
+          ? '1080p'
+          : width <= 2560 && height <= 1440
+            ? '1440p'
+            : '2160p'
+    const baseBitrate = baseBitrateMap[resolutionLabel]
+    return Math.round(baseBitrate * (framerate / 30))
+  }
+
+  static getVideoEncoderConfig(options: MP4EncodeTransformerOptions): VideoEncoderConfig {
+    let { width, height, framerate, videoCodec, videoBitrate, info } = options
     const videoTrack = info?.videoTracks[0]
     if (info && videoTrack) {
       const duration = (info.duration / info.timescale) * 1_000
@@ -88,17 +107,21 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
         avc: { format: 'avc' },
       }
     }
+    width = width || 0
+    height = height || 0
+    framerate = framerate || 30
+    const bitrate = videoBitrate || this.getDefaultVideoBitrate(width, height, framerate)
     return {
       codec: videoCodec || 'avc1.4D0032',
-      framerate: framerate || 30,
-      bitrate: videoBitrate || 2_000_000,
-      width: width || 0,
-      height: height || 0,
+      framerate,
+      bitrate,
+      width,
+      height,
       avc: { format: 'avc' },
     }
   }
 
-  protected static _getAudioEncoderConfig(options: MP4EncodeTransformerOptions): AudioEncoderConfig {
+  static getAudioEncoderConfig(options: MP4EncodeTransformerOptions): AudioEncoderConfig {
     const { audioCodec, audioBitrate, audioSampleRate, audioChannelCount, info } = options
     const audioTrack = info?.audioTracks[0]
     if (audioTrack) {
@@ -119,10 +142,10 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
 
   static async isConfigSupported(options: MP4EncodeTransformerOptions = {}): Promise<boolean> {
     try {
-      return Boolean((await VideoEncoder.isConfigSupported(this._getVideoEncoderConfig(options))).supported)
+      return Boolean((await VideoEncoder.isConfigSupported(this.getVideoEncoderConfig(options))).supported)
         && (
           options.audio === false
-          || Boolean((await AudioEncoder.isConfigSupported(this._getAudioEncoderConfig(options))).supported)
+          || Boolean((await AudioEncoder.isConfigSupported(this.getAudioEncoderConfig(options))).supported)
         )
     }
     catch (error) {
@@ -176,8 +199,8 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
   constructor(
     protected _options: MP4EncodeTransformerOptions = {},
   ) {
-    this._videoEncoder.configure(MP4EncodeTransformer._getVideoEncoderConfig(_options))
-    this._audioEncoder.configure(MP4EncodeTransformer._getAudioEncoderConfig(_options))
+    this._videoEncoder.configure(MP4EncodeTransformer.getVideoEncoderConfig(_options))
+    this._audioEncoder.configure(MP4EncodeTransformer.getAudioEncoderConfig(_options))
   }
 
   protected async _encode(input: MP4EncodeTransformerInput): Promise<void> {

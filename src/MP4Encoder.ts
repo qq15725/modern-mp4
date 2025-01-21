@@ -17,7 +17,6 @@ export type MP4EncoderEncodeSource = MP4EncodeTransformerInput
 
 export class MP4Encoder {
   protected _controler?: ReadableStreamDefaultController<MP4EncoderEncodeSource>
-  protected _encoder: MP4EncodeTransformer
 
   readable: ReadableStream
 
@@ -32,11 +31,10 @@ export class MP4Encoder {
         options.height = Math.floor(options.height / 2) * 2
       }
     }
-    this._encoder = new MP4EncodeTransformer(options)
     this.readable = new ReadableStream({
       start: controler => this._controler = controler,
     })
-      .pipeThrough(this._encoder)
+      .pipeThrough(new MP4EncodeTransformer(options))
       .pipeThrough(new MP4MuxTransformer(options))
   }
 
@@ -44,8 +42,8 @@ export class MP4Encoder {
     return MP4EncodeTransformer.isConfigSupported(options)
   }
 
-  encode(frame: MP4EncoderEncodeSource): void {
-    this._controler?.enqueue(frame)
+  async encode(frame: MP4EncoderEncodeSource): Promise<void> {
+    await this._controler?.enqueue(frame)
   }
 
   flush(): Promise<Blob> {
