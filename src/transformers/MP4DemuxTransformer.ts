@@ -2,7 +2,7 @@ import type { MP4ArrayBuffer, MP4File, MP4Info, Sample } from 'mp4box'
 import { createFile } from 'mp4box'
 import { requestIdleCallback } from '../utils'
 
-export interface Mp4DemuxTransformerOutputReady {
+export interface MP4DemuxTransformerOutputReady {
   type: 'ready'
   data: {
     info: MP4Info
@@ -10,7 +10,7 @@ export interface Mp4DemuxTransformerOutputReady {
   }
 }
 
-export interface Mp4DemuxTransformerOutputSamples {
+export interface MP4DemuxTransformerOutputSamples {
   type: 'samples'
   data: {
     id: number
@@ -19,23 +19,23 @@ export interface Mp4DemuxTransformerOutputSamples {
   }
 }
 
-export type Mp4DemuxTransformerOutput =
-  | Mp4DemuxTransformerOutputReady
-  | Mp4DemuxTransformerOutputSamples
+export type MP4DemuxTransformerOutput =
+  | MP4DemuxTransformerOutputReady
+  | MP4DemuxTransformerOutputSamples
 
-export interface Mp4DemuxTransformerOptions {
+export interface MP4DemuxTransformerOptions {
   onInfo?: (info: MP4Info) => void
 }
 
-export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransformerOutput, BufferSource> {
+export class MP4DemuxTransformer implements ReadableWritablePair<MP4DemuxTransformerOutput, BufferSource> {
   protected _file: MP4File
-  protected _rsControler?: ReadableStreamDefaultController<Mp4DemuxTransformerOutput>
+  protected _rsControler?: ReadableStreamDefaultController<MP4DemuxTransformerOutput>
   protected _rsCancelled = false
   protected _wsOffset = 0
 
   get info(): MP4Info { return this._file.getInfo() as MP4Info }
 
-  readable = new ReadableStream<Mp4DemuxTransformerOutput>({
+  readable = new ReadableStream<MP4DemuxTransformerOutput>({
     start: controler => this._rsControler = controler,
     cancel: () => {
       this._file.stop()
@@ -74,7 +74,7 @@ export class Mp4DemuxTransformer implements ReadableWritablePair<Mp4DemuxTransfo
   })
 
   constructor(
-    public _options: Mp4DemuxTransformerOptions = {},
+    public _options: MP4DemuxTransformerOptions = {},
   ) {
     const file = createFile()
 

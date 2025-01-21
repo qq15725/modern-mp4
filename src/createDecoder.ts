@@ -1,6 +1,6 @@
-import type { Mp4DecoderOptions } from './Mp4Decoder'
-import { Mp4Decoder } from './Mp4Decoder'
+import type { MP4DecoderOptions } from './MP4Decoder'
+import { MP4Decoder } from './MP4Decoder'
 
-export function createDecoder(options?: Mp4DecoderOptions): Mp4Decoder {
-  return new Mp4Decoder(options)
+export function createDecoder(options?: MP4DecoderOptions): MP4Decoder {
+  return new MP4Decoder(options)
 }

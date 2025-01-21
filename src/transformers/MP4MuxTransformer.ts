@@ -1,9 +1,9 @@
 import type { MP4Info, SampleOptions } from 'mp4box'
-import type { Mp4EncodeTransformerOutput } from './Mp4EncodeTransformer'
+import type { MP4EncodeTransformerOutput } from './MP4EncodeTransformer'
 import { BoxParser, createFile, DataStream } from 'mp4box'
 import { requestIdleCallback } from '../utils'
 
-export interface Mp4MuxTransformerOptions {
+export interface MP4MuxTransformerOptions {
   width?: number
   height?: number
   videoTimescale?: number
@@ -16,9 +16,9 @@ export interface Mp4MuxTransformerOptions {
   info?: MP4Info
 }
 
-export type Mp4MuxTransformerInput = Mp4EncodeTransformerOutput
+export type MP4MuxTransformerInput = MP4EncodeTransformerOutput
 
-export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4MuxTransformerInput> {
+export class MP4MuxTransformer implements ReadableWritablePair<ArrayBuffer, MP4MuxTransformerInput> {
   protected _file = createFile()
   protected _rsControler?: ReadableStreamDefaultController<ArrayBuffer>
   protected _rsCancelled = false
@@ -35,7 +35,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
     },
   })
 
-  writable = new WritableStream<Mp4MuxTransformerInput>({
+  writable = new WritableStream<MP4MuxTransformerInput>({
     write: (input) => {
       if (this._rsCancelled) {
         this.writable.abort()
@@ -78,7 +78,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
   })
 
   constructor(
-    public _options: Mp4MuxTransformerOptions = {},
+    public _options: MP4MuxTransformerOptions = {},
   ) {
     //
   }
@@ -92,7 +92,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
       height: height || videoTrack?.track_height || 0,
       language: videoLanguage || videoTrack?.language,
       // @ts-expect-error brands
-      brands: ['isom', 'iso2', 'avc1', 'mp42', 'mp41'],
+      brands: ['isom', 'iso2', 'avc1', 'MP42', 'MP41'],
       avcDecoderConfigRecord: meta.decoderConfig?.description,
     })
   }
@@ -106,7 +106,7 @@ export class Mp4MuxTransformer implements ReadableWritablePair<ArrayBuffer, Mp4M
       channel_count: audioChannelCount || audioTrack?.audio.channel_count || 2,
       language: audioLanguage || audioTrack?.language,
       hdlr: 'soun',
-      type: (audioCodec || audioTrack?.codec) === 'aac' ? 'mp4a' : 'Opus',
+      type: (audioCodec || audioTrack?.codec) === 'aac' ? 'MP4a' : 'Opus',
       description: this._toESDSBox(meta.decoderConfig!.description!),
     })
   }

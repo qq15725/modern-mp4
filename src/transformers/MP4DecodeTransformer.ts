@@ -1,8 +1,8 @@
 import type { MP4AudioTrack, MP4VideoTrack, Sample } from 'mp4box'
-import type { Mp4DemuxTransformerOutput } from './Mp4DemuxTransformer'
+import type { MP4DemuxTransformerOutput } from './MP4DemuxTransformer'
 import { DataStream } from 'mp4box'
 
-export interface Mp4DecodeTransformerOutputVideoFrame {
+export interface MP4DecodeTransformerOutputVideoFrame {
   type: 'video'
   keyFrame: boolean
   codedHeight: number
@@ -19,23 +19,23 @@ export interface Mp4DecodeTransformerOutputVideoFrame {
   data: ImageBitmap
 }
 
-export type Mp4DecodeTransformerInput = Mp4DemuxTransformerOutput
-export type Mp4DecodeTransformerOutput = Mp4DecodeTransformerOutputVideoFrame
+export type MP4DecodeTransformerInput = MP4DemuxTransformerOutput
+export type MP4DecodeTransformerOutput = MP4DecodeTransformerOutputVideoFrame
 
-export interface Mp4DecodeTransformerOptions {
+export interface MP4DecodeTransformerOptions {
   audio?: boolean
   startTime?: number
   endTime?: number
   framerate?: number
   filter?: (timestamp: number, duration: number) => boolean
   onProgress?: (current: number, total: number) => void
-  onFrame?: (frame: Mp4DecodeTransformerOutput) => void
+  onFrame?: (frame: MP4DecodeTransformerOutput) => void
 }
 
-export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTransformerOutput, Mp4DecodeTransformerInput> {
+export class MP4DecodeTransformer implements ReadableWritablePair<MP4DecodeTransformerOutput, MP4DecodeTransformerInput> {
   protected _videoQueueSize = 0
   protected _samples: Array<Sample> = []
-  protected _rsControler?: ReadableStreamDefaultController<Mp4DecodeTransformerOutput>
+  protected _rsControler?: ReadableStreamDefaultController<MP4DecodeTransformerOutput>
   protected _rsCancelled = false
 
   protected _videoTrack?: MP4VideoTrack
@@ -72,7 +72,7 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
         timestamp: rawFrame.timestamp,
         visibleRect: rawFrame.visibleRect,
         timescale: this._videoTrack?.timescale ?? 1,
-      } as Mp4DecodeTransformerOutputVideoFrame
+      } as MP4DecodeTransformerOutputVideoFrame
       createImageBitmap(rawFrame).then((data) => {
         frame.data = data
         this._rsControler?.enqueue(frame)
@@ -90,7 +90,7 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
     },
   })
 
-  readable = new ReadableStream<Mp4DecodeTransformerOutput>({
+  readable = new ReadableStream<MP4DecodeTransformerOutput>({
     start: controler => this._rsControler = controler,
     cancel: () => {
       this._videoDecoder.close()
@@ -99,7 +99,7 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
     },
   })
 
-  writable = new WritableStream<Mp4DecodeTransformerInput>({
+  writable = new WritableStream<MP4DecodeTransformerInput>({
     write: async (chunk) => {
       if (this._rsCancelled) {
         this.writable.abort()
@@ -192,7 +192,7 @@ export class Mp4DecodeTransformer implements ReadableWritablePair<Mp4DecodeTrans
   })
 
   constructor(
-    protected _options: Mp4DecodeTransformerOptions = {},
+    protected _options: MP4DecodeTransformerOptions = {},
   ) {
     //
   }

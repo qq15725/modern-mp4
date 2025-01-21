@@ -1,27 +1,27 @@
 import type {
-  Mp4EncodeTransformerInput,
-  Mp4EncodeTransformerOptions,
-  Mp4MuxTransformerOptions,
+  MP4EncodeTransformerInput,
+  MP4EncodeTransformerOptions,
+  MP4MuxTransformerOptions,
 } from './transformers'
 import {
-  Mp4EncodeTransformer,
-  Mp4MuxTransformer,
+  MP4EncodeTransformer,
+  MP4MuxTransformer,
 } from './transformers'
 import { readStream } from './utils'
 
-export interface Mp4EncoderOptions extends Mp4EncodeTransformerOptions, Mp4MuxTransformerOptions {
+export interface MP4EncoderOptions extends MP4EncodeTransformerOptions, MP4MuxTransformerOptions {
   //
 }
 
-export type Mp4EncoderEncodeSource = Mp4EncodeTransformerInput
+export type MP4EncoderEncodeSource = MP4EncodeTransformerInput
 
-export class Mp4Encoder {
-  protected _controler?: ReadableStreamDefaultController<Mp4EncoderEncodeSource>
-  protected _encoder: Mp4EncodeTransformer
+export class MP4Encoder {
+  protected _controler?: ReadableStreamDefaultController<MP4EncoderEncodeSource>
+  protected _encoder: MP4EncodeTransformer
 
   readable: ReadableStream
 
-  constructor(options?: Mp4EncoderOptions) {
+  constructor(options?: MP4EncoderOptions) {
     if (options) {
       if (options.width !== undefined && Math.floor(options.width / 2) !== options.width / 2) {
         console.warn('width not divisible by 2')
@@ -32,19 +32,19 @@ export class Mp4Encoder {
         options.height = Math.floor(options.height / 2) * 2
       }
     }
-    this._encoder = new Mp4EncodeTransformer(options)
+    this._encoder = new MP4EncodeTransformer(options)
     this.readable = new ReadableStream({
       start: controler => this._controler = controler,
     })
       .pipeThrough(this._encoder)
-      .pipeThrough(new Mp4MuxTransformer(options))
+      .pipeThrough(new MP4MuxTransformer(options))
   }
 
-  static isConfigSupported(options?: Mp4EncoderOptions): Promise<boolean> {
-    return Mp4EncodeTransformer.isConfigSupported(options)
+  static isConfigSupported(options?: MP4EncoderOptions): Promise<boolean> {
+    return MP4EncodeTransformer.isConfigSupported(options)
   }
 
-  encode(frame: Mp4EncoderEncodeSource): void {
+  encode(frame: MP4EncoderEncodeSource): void {
     this._controler?.enqueue(frame)
   }
 
@@ -53,7 +53,7 @@ export class Mp4Encoder {
       let result: ArrayBuffer
       readStream(this.readable, {
         onRead: _result => result = _result,
-        onDone: () => resolve(new Blob([result], { type: 'video/mp4' })),
+        onDone: () => resolve(new Blob([result], { type: 'video/MP4' })),
       })
       this._controler?.close()
     })

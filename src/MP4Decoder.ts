@@ -1,49 +1,49 @@
 import type { MP4Info } from 'mp4box'
 import type {
-  Mp4DecodeTransformerOptions,
-  Mp4DecodeTransformerOutput,
-  Mp4DecodeTransformerOutputVideoFrame,
-  Mp4DemuxTransformerOptions,
+  MP4DecodeTransformerOptions,
+  MP4DecodeTransformerOutput,
+  MP4DecodeTransformerOutputVideoFrame,
+  MP4DemuxTransformerOptions,
 } from './transformers'
 import {
-  Mp4DecodeTransformer,
-  Mp4DemuxTransformer,
+  MP4DecodeTransformer,
+  MP4DemuxTransformer,
 } from './transformers'
 import { readStream } from './utils'
 
-export interface Mp4DecoderOptions extends Mp4DemuxTransformerOptions, Mp4DecodeTransformerOptions {
+export interface MP4DecoderOptions extends MP4DemuxTransformerOptions, MP4DecodeTransformerOptions {
   videoFrames?: boolean
 }
 
-export interface Mp4DecoderFlushResult {
+export interface MP4DecoderFlushResult {
   duration: number
   width: number
   height: number
   info: MP4Info
-  frames: Array<Mp4DecodeTransformerOutput>
-  videoFrames: Array<Mp4DecodeTransformerOutputVideoFrame>
+  frames: Array<MP4DecodeTransformerOutput>
+  videoFrames: Array<MP4DecodeTransformerOutputVideoFrame>
   audioFrames: Array<AudioData>
 }
 
-export class Mp4Decoder {
+export class MP4Decoder {
   protected _controler?: ReadableStreamDefaultController<BufferSource>
-  protected _demuxer: Mp4DemuxTransformer
+  protected _demuxer: MP4DemuxTransformer
   protected _videoFrames?: boolean
 
   readable: ReadableStream
 
-  constructor(options?: Mp4DecoderOptions) {
+  constructor(options?: MP4DecoderOptions) {
     let rs: any = new ReadableStream({
       start: controler => this._controler = controler,
     })
       .pipeThrough(
-        this._demuxer = new Mp4DemuxTransformer(options),
+        this._demuxer = new MP4DemuxTransformer(options),
       )
 
     this._videoFrames = options?.videoFrames
 
     if (this._videoFrames !== false) {
-      rs = rs.pipeThrough(new Mp4DecodeTransformer(options))
+      rs = rs.pipeThrough(new MP4DecodeTransformer(options))
     }
 
     this.readable = rs
@@ -53,10 +53,10 @@ export class Mp4Decoder {
     this._controler?.enqueue(buffer)
   }
 
-  flush(): Promise<Mp4DecoderFlushResult> {
+  flush(): Promise<MP4DecoderFlushResult> {
     return new Promise((resolve) => {
-      const frames: Array<Mp4DecodeTransformerOutput> = []
-      const videoFrames: Array<Mp4DecodeTransformerOutputVideoFrame> = []
+      const frames: Array<MP4DecodeTransformerOutput> = []
+      const videoFrames: Array<MP4DecodeTransformerOutputVideoFrame> = []
       readStream(this.readable, {
         onRead: (frame) => {
           switch (frame.type) {

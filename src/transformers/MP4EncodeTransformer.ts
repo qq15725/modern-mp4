@@ -1,30 +1,30 @@
 import type { MP4Info } from 'mp4box'
 
-export type Mp4EncodeTransformerInputNetworkImage = { data: string } & VideoEncoderEncodeOptions & VideoFrameInit
-export type Mp4EncodeTransformerInputCanvasImage = { data: CanvasImageSource } & VideoEncoderEncodeOptions & VideoFrameInit
-export type Mp4EncodeTransformerInputVideoFrame = { data: VideoFrame } & VideoEncoderEncodeOptions
-export type Mp4EncodeTransformerInputAudioData = AudioData
-export type Mp4EncodeTransformerInput =
-  | Mp4EncodeTransformerInputNetworkImage
-  | Mp4EncodeTransformerInputCanvasImage
-  | Mp4EncodeTransformerInputVideoFrame
-  | Mp4EncodeTransformerInputAudioData
+export type MP4EncodeTransformerInputNetworkImage = { data: string } & VideoEncoderEncodeOptions & VideoFrameInit
+export type MP4EncodeTransformerInputCanvasImage = { data: CanvasImageSource } & VideoEncoderEncodeOptions & VideoFrameInit
+export type MP4EncodeTransformerInputVideoFrame = { data: VideoFrame } & VideoEncoderEncodeOptions
+export type MP4EncodeTransformerInputAudioData = AudioData
+export type MP4EncodeTransformerInput =
+  | MP4EncodeTransformerInputNetworkImage
+  | MP4EncodeTransformerInputCanvasImage
+  | MP4EncodeTransformerInputVideoFrame
+  | MP4EncodeTransformerInputAudioData
 
-export interface Mp4EncodeTransformerOutputVideo {
+export interface MP4EncodeTransformerOutputVideo {
   type: 'video'
   chunk: EncodedVideoChunk
   meta: EncodedVideoChunkMetadata
 }
-export interface Mp4EncodeTransformerOutputAudio {
+export interface MP4EncodeTransformerOutputAudio {
   type: 'audio'
   chunk: EncodedAudioChunk
   meta: EncodedAudioChunkMetadata
 }
-export type Mp4EncodeTransformerOutput =
-  | Mp4EncodeTransformerOutputVideo
-  | Mp4EncodeTransformerOutputAudio
+export type MP4EncodeTransformerOutput =
+  | MP4EncodeTransformerOutputVideo
+  | MP4EncodeTransformerOutputAudio
 
-export interface Mp4EncodeTransformerOptions {
+export interface MP4EncodeTransformerOptions {
   width?: number
   height?: number
   framerate?: number
@@ -48,10 +48,10 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTransformerOutput, Mp4EncodeTransformerInput> {
+export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTransformerOutput, MP4EncodeTransformerInput> {
   protected _videoQueueSize = 0
   protected _audioQueueSize = 0
-  protected _rsControler?: ReadableStreamDefaultController<Mp4EncodeTransformerOutput>
+  protected _rsControler?: ReadableStreamDefaultController<MP4EncodeTransformerOutput>
   protected _rsCancelled = false
   protected _wsLastCanvasImageSource?: CanvasImageSource
   protected _wsFrameTimestamp = 1
@@ -74,7 +74,7 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     },
   })
 
-  protected static _getVideoEncoderConfig(options: Mp4EncodeTransformerOptions): VideoEncoderConfig {
+  protected static _getVideoEncoderConfig(options: MP4EncodeTransformerOptions): VideoEncoderConfig {
     const { width, height, framerate, videoCodec, videoBitrate, info } = options
     const videoTrack = info?.videoTracks[0]
     if (info && videoTrack) {
@@ -98,26 +98,26 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     }
   }
 
-  protected static _getAudioEncoderConfig(options: Mp4EncodeTransformerOptions): AudioEncoderConfig {
+  protected static _getAudioEncoderConfig(options: MP4EncodeTransformerOptions): AudioEncoderConfig {
     const { audioCodec, audioBitrate, audioSampleRate, audioChannelCount, info } = options
     const audioTrack = info?.audioTracks[0]
     if (audioTrack) {
       return {
-        codec: (audioCodec || audioTrack.codec) === 'aac' ? 'mp4a.40.2' : 'opus',
+        codec: (audioCodec || audioTrack.codec) === 'aac' ? 'MP4a.40.2' : 'opus',
         sampleRate: audioSampleRate || audioTrack.audio.sample_rate,
         numberOfChannels: audioChannelCount || audioTrack.audio.channel_count,
         bitrate: audioBitrate || audioTrack.bitrate,
       }
     }
     return {
-      codec: (audioCodec || 'aac') === 'aac' ? 'mp4a.40.2' : 'opus',
+      codec: (audioCodec || 'aac') === 'aac' ? 'MP4a.40.2' : 'opus',
       sampleRate: audioSampleRate || 48_000,
       numberOfChannels: audioChannelCount || 2,
       bitrate: audioBitrate || 128_000,
     }
   }
 
-  static async isConfigSupported(options: Mp4EncodeTransformerOptions = {}): Promise<boolean> {
+  static async isConfigSupported(options: MP4EncodeTransformerOptions = {}): Promise<boolean> {
     try {
       return Boolean((await VideoEncoder.isConfigSupported(this._getVideoEncoderConfig(options))).supported)
         && (
@@ -131,7 +131,7 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     }
   }
 
-  readable = new ReadableStream<Mp4EncodeTransformerOutput>({
+  readable = new ReadableStream<MP4EncodeTransformerOutput>({
     start: controler => this._rsControler = controler,
     cancel: () => {
       this._videoEncoder.close()
@@ -141,7 +141,7 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
     },
   })
 
-  writable = new WritableStream<Mp4EncodeTransformerInput>({
+  writable = new WritableStream<MP4EncodeTransformerInput>({
     write: async (input) => {
       if (this._rsCancelled) {
         this.writable.abort()
@@ -174,13 +174,13 @@ export class Mp4EncodeTransformer implements ReadableWritablePair<Mp4EncodeTrans
   })
 
   constructor(
-    protected _options: Mp4EncodeTransformerOptions = {},
+    protected _options: MP4EncodeTransformerOptions = {},
   ) {
-    this._videoEncoder.configure(Mp4EncodeTransformer._getVideoEncoderConfig(_options))
-    this._audioEncoder.configure(Mp4EncodeTransformer._getAudioEncoderConfig(_options))
+    this._videoEncoder.configure(MP4EncodeTransformer._getVideoEncoderConfig(_options))
+    this._audioEncoder.configure(MP4EncodeTransformer._getAudioEncoderConfig(_options))
   }
 
-  protected async _encode(input: Mp4EncodeTransformerInput): Promise<void> {
+  protected async _encode(input: MP4EncodeTransformerInput): Promise<void> {
     if (input instanceof AudioData) {
       this._audioEncoder.encode(input)
       input.close()

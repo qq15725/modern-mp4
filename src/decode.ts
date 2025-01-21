@@ -1,5 +1,5 @@
-import type { Mp4DecoderFlushResult, Mp4DecoderOptions } from './Mp4Decoder'
-import { Mp4Decoder } from './Mp4Decoder'
+import type { MP4DecoderFlushResult, MP4DecoderOptions } from './MP4Decoder'
+import { MP4Decoder } from './MP4Decoder'
 import { createReadableStream, readStream } from './utils'
 
 export type DecodeSource =
@@ -9,15 +9,15 @@ export type DecodeSource =
   | Array<BufferSource>
   | ReadableStream<BufferSource>
 
-export interface Mp4DecodeOptions extends Mp4DecoderOptions {
+export interface MP4DecodeOptions extends MP4DecoderOptions {
   data: DecodeSource
 }
 
-export type Mp4DecodeResult = Mp4DecoderFlushResult
+export type MP4DecodeResult = MP4DecoderFlushResult
 
-export async function decode(options: Mp4DecodeOptions): Promise<Mp4DecodeResult> {
+export async function decode(options: MP4DecodeOptions): Promise<MP4DecodeResult> {
   let { data, ...restOptions } = options
-  const decoder = new Mp4Decoder(restOptions)
+  const decoder = new MP4Decoder(restOptions)
   if (typeof data === 'string') {
     data = (await fetch(data).then(res => res.body)) as ReadableStream<Uint8Array>
   }
