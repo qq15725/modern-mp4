@@ -11,27 +11,36 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - name: 读取发布日志摘要
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PY'
-          import os, re, urllib.request, urllib.error
+          import os, re, time, urllib.request, urllib.error
           class NoRedirect(urllib.request.HTTPRedirectHandler):
               def redirect_request(self, req, fp, code, msg, headers, newurl):
                   return None
-          url = 'https://api.github.com/repos/qq15725/modern-mp4/actions/jobs/116855237263/logs'
+          url = 'https://api.github.com/repos/qq15725/modern-mp4/actions/jobs/116870623526/logs'
           req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
-          try:
-              data = urllib.request.build_opener(NoRedirect()).open(req).read()
-          except urllib.error.HTTPError as error:
-              if error.code != 302:
-                  raise
-              data = urllib.request.urlopen(error.headers['Location']).read()
+          for attempt in range(36):
+              try:
+                  data = urllib.request.build_opener(NoRedirect()).open(req).read()
+                  break
+              except urllib.error.HTTPError as error:
+                  if error.code == 302:
+                      data = urllib.request.urlopen(error.headers['Location']).read()
+                      break
+                  if error.code not in (404, 410):
+                      raise
+                  print('等待 GitHub 提供本次发布任务的日志', flush=True)
+                  time.sleep(10)
+          else:
+              raise RuntimeError('GitHub 日志暂不可读取')
           for line in data.decode().splitlines():
               line = re.sub(r'^\S+\s+', '', line)
-              if re.search(r'^\+ modern-mp4@|^npm (notice|warn|error).*(Publishing|publish|scann|pending|review|hold|approv|provenance)', line, re.I):
+              if re.search(r'^\+ modern-mp4@|^npm (notice|warn|error).*(Publishing|publish|scann|pending|review|hold|approv|provenance)|^等待 npm 版本可用 \((?:1|45)/45\)|^##\[error\]|^::error::', line, re.I):
                   safe = line.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
                   print('::notice::' + safe)
           PY
