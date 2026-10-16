@@ -46,13 +46,13 @@ export class MP4MuxTransformer implements ReadableWritablePair<ArrayBuffer, MP4M
         case 'video':
           this._file.addSample(
             this._videoTrackId ??= this._addVideoTrack(meta),
-            ...this._chunkToSampleInit(chunk),
+            ...this._chunkToSampleInit(chunk, this._options.videoTimescale || this._options.info?.videoTracks[0]?.timescale || 1000),
           )
           break
         case 'audio':
           this._file.addSample(
             this._audioTrackId ??= this._addAudioTrack(meta),
-            ...this._chunkToSampleInit(chunk),
+            ...this._chunkToSampleInit(chunk, this._options.audioTimescale || this._options.info?.audioTracks[0]?.timescale || 48000),
           )
           break
       }
@@ -101,12 +101,12 @@ export class MP4MuxTransformer implements ReadableWritablePair<ArrayBuffer, MP4M
     const { audioCodec, audioTimescale, audioSampleRate, audioChannelCount, audioLanguage, info } = this._options
     const audioTrack = info?.audioTracks[0]
     return this._file.addTrack({
-      timescale: audioTimescale || audioTrack?.timescale || 1_000,
+      timescale: audioTimescale || audioTrack?.timescale || 48000,
       samplerate: audioSampleRate || audioTrack?.audio.sample_rate || 48000,
       channel_count: audioChannelCount || audioTrack?.audio.channel_count || 2,
       language: audioLanguage || audioTrack?.language,
       hdlr: 'soun',
-      type: (audioCodec || audioTrack?.codec) === 'aac' ? 'MP4a' : 'Opus',
+      type: !audioCodec || audioCodec === 'aac' || audioCodec.startsWith('mp4a') ? 'mp4a' : 'Opus',
       description: this._toESDSBox(meta.decoderConfig!.description!),
     })
   }
@@ -145,28 +145,29 @@ export class MP4MuxTransformer implements ReadableWritablePair<ArrayBuffer, MP4M
       0x05, // descriptor_type
 
       configlen,
-      ...new Uint8Array(config instanceof ArrayBuffer ? config : config.buffer),
+      ...new Uint8Array(config instanceof ArrayBuffer ? config : config.buffer, ArrayBuffer.isView(config) ? config.byteOffset : 0, config.byteLength),
 
       0x06,
       0x01,
       0x02,
     ])
 
-    // eslint-disable-next-line new-cap
-    const esdsBox = new BoxParser.esdsBox(buf.byteLength)
+    // mp4box 0.x 直接导出构造器，2.x 放在 box 注册表。
+    const EsdsBox = (BoxParser as any).esdsBox ?? (BoxParser as any).box.esds
+    const esdsBox = new EsdsBox(buf.byteLength)
     ;(esdsBox as any).hdr_size = 0
     esdsBox.parse(new DataStream(buf.buffer, 0, DataStream.BIG_ENDIAN))
     return esdsBox
   }
 
-  protected _chunkToSampleInit(chunk: EncodedVideoChunk): [ArrayBuffer, SampleOptions] {
+  protected _chunkToSampleInit(chunk: EncodedVideoChunk | EncodedAudioChunk, timescale: number): [ArrayBuffer, SampleOptions] {
     const buf = new ArrayBuffer(chunk.byteLength)
     chunk.copyTo(buf)
-    const dts = chunk.timestamp
+    const dts = Math.round(chunk.timestamp * timescale / 1_000_000)
     return [
       buf,
       {
-        duration: chunk.duration ?? 0,
+        duration: Math.round((chunk.timestamp + (chunk.duration ?? 0)) * timescale / 1_000_000) - dts,
         dts,
         cts: dts,
         is_sync: chunk.type === 'key',

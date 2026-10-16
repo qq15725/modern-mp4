@@ -53,26 +53,19 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
   protected _audioQueueSize = 0
   protected _rsControler?: ReadableStreamDefaultController<MP4EncodeTransformerOutput>
   protected _rsCancelled = false
+  protected _error?: unknown
   protected _wsLastCanvasImageSource?: CanvasImageSource
   protected _wsFrameTimestamp = 1
 
   protected _videoEncoder = new VideoEncoder({
-    error: error => console.error('Failed to VideoEncoder', error),
+    error: error => this._rsControler?.error(error),
     output: (chunk, meta) => {
       this._rsControler?.enqueue({ type: 'video', chunk, meta: meta! })
       this._updateProgress()
     },
   })
 
-  protected _audioEncoder = new AudioEncoder({
-    error: error => console.error('Failed to AudioEncoder', error),
-    output: (chunk, meta) => {
-      if (meta) {
-        this._rsControler?.enqueue({ type: 'audio', chunk, meta })
-      }
-      this._updateProgress()
-    },
-  })
+  protected _audioEncoder?: AudioEncoder
 
   static getDefaultVideoBitrate(width: number, height: number, framerate: number): number {
     const baseBitrateMap = {
@@ -126,14 +119,14 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
     const audioTrack = info?.audioTracks[0]
     if (audioTrack) {
       return {
-        codec: (audioCodec || audioTrack.codec) === 'aac' ? 'MP4a.40.2' : 'opus',
+        codec: !audioCodec || audioCodec === 'aac' ? 'mp4a.40.2' : audioCodec,
         sampleRate: audioSampleRate || audioTrack.audio.sample_rate,
         numberOfChannels: audioChannelCount || audioTrack.audio.channel_count,
         bitrate: audioBitrate || audioTrack.bitrate,
       }
     }
     return {
-      codec: (audioCodec || 'aac') === 'aac' ? 'MP4a.40.2' : 'opus',
+      codec: !audioCodec || audioCodec === 'aac' ? 'mp4a.40.2' : audioCodec,
       sampleRate: audioSampleRate || 48_000,
       numberOfChannels: audioChannelCount || 2,
       bitrate: audioBitrate || 128_000,
@@ -156,9 +149,12 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
 
   readable = new ReadableStream<MP4EncodeTransformerOutput>({
     start: controler => this._rsControler = controler,
-    cancel: () => {
-      this._videoEncoder.close()
-      this._audioEncoder.close()
+    cancel: (reason) => {
+      this._error = reason
+      if (this._videoEncoder.state !== 'closed')
+        this._videoEncoder.close()
+      if (this._audioEncoder && this._audioEncoder.state !== 'closed')
+        this._audioEncoder.close()
       this._rsControler = undefined
       this._rsCancelled = true
     },
@@ -167,10 +163,10 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
   writable = new WritableStream<MP4EncodeTransformerInput>({
     write: async (input) => {
       if (this._rsCancelled) {
-        this.writable.abort()
+        throw this._error ?? new Error('Encoding cancelled')
       }
       await this._encode(input)
-      if (input instanceof AudioData) {
+      if (typeof AudioData !== 'undefined' && input instanceof AudioData) {
         this._audioQueueSize++
       }
       else {
@@ -187,12 +183,23 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
         })
       }
       this._videoQueueSize = this._videoEncoder.encodeQueueSize
-      this._audioQueueSize = this._audioEncoder.encodeQueueSize
+      this._audioQueueSize = (this._audioEncoder?.encodeQueueSize ?? 0)
       await Promise.all([
         this._videoEncoder.state === 'configured' ? this._videoEncoder.flush() : null,
-        this._audioEncoder.state === 'configured' ? this._audioEncoder.flush() : null,
+        this._audioEncoder?.state === 'configured' ? this._audioEncoder.flush() : null,
       ])
+      if (this._videoEncoder.state !== 'closed')
+        this._videoEncoder.close()
+      if (this._audioEncoder && this._audioEncoder.state !== 'closed')
+        this._audioEncoder.close()
       this._rsControler?.close()
+    },
+    abort: (reason) => {
+      if (this._videoEncoder.state !== 'closed')
+        this._videoEncoder.close()
+      if (this._audioEncoder && this._audioEncoder.state !== 'closed')
+        this._audioEncoder.close()
+      this._rsControler?.error(reason)
     },
   })
 
@@ -200,33 +207,53 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
     protected _options: MP4EncodeTransformerOptions = {},
   ) {
     this._videoEncoder.configure(MP4EncodeTransformer.getVideoEncoderConfig(_options))
-    this._audioEncoder.configure(MP4EncodeTransformer.getAudioEncoderConfig(_options))
+    if (_options.audio !== false) {
+      this._audioEncoder = new AudioEncoder({
+        error: error => this._rsControler?.error(error),
+        output: (chunk, meta) => {
+          this._rsControler?.enqueue({ type: 'audio', chunk, meta: meta ?? {} })
+          this._updateProgress()
+        },
+      })
+      this._audioEncoder.configure(MP4EncodeTransformer.getAudioEncoderConfig(_options))
+    }
   }
 
   protected async _encode(input: MP4EncodeTransformerInput): Promise<void> {
-    if (input instanceof AudioData) {
-      this._audioEncoder.encode(input)
-      input.close()
+    if (typeof AudioData !== 'undefined' && input instanceof AudioData) {
+      try {
+        if (!this._audioEncoder)
+          throw new Error('Audio encoding is disabled')
+        this._audioEncoder.encode(input)
+        await this._waitForQueue(this._audioEncoder, 32)
+      }
+      finally {
+        input.close()
+      }
     }
     else {
-      const { data, ...options } = input
+      const { data, ...options } = input as Exclude<MP4EncodeTransformerInput, AudioData>
       if (data instanceof VideoFrame) {
         this._videoEncoder.encode(data, options)
-        this._wsFrameTimestamp += data.duration ?? 0
+        this._wsFrameTimestamp = (data.timestamp + (data.duration ?? 0)) / 1000
         data.close()
+        await this._waitForQueue(this._videoEncoder, 8)
       }
       else if (typeof data === 'string') {
         return this._encode({ data: await loadImage(data), ...options })
       }
       else {
         const {
-          keyFrame = this._wsFrameTimestamp === 1,
+          keyFrame = this._videoQueueSize === 0,
           ...frameInit
         } = options as Record<string, any>
         if (typeof frameInit.duration === 'undefined')
           frameInit.duration = 1
         if (typeof frameInit.timestamp === 'undefined')
           frameInit.timestamp = this._wsFrameTimestamp
+        // Canvas 输入沿用公开 API 的毫秒；WebCodecs 的 VideoFrame/AudioData 使用微秒。
+        frameInit.timestamp = Math.round(frameInit.timestamp * 1000)
+        frameInit.duration = Math.round(frameInit.duration * 1000)
         const frame = new VideoFrame(data, frameInit)
         if (data instanceof ImageBitmap) {
           data.close()
@@ -242,9 +269,27 @@ export class MP4EncodeTransformer implements ReadableWritablePair<MP4EncodeTrans
     }
   }
 
+  protected async _waitForQueue(encoder: VideoEncoder | AudioEncoder, limit: number): Promise<void> {
+    if (encoder.encodeQueueSize <= limit)
+      return
+    await new Promise<void>((resolve, reject) => {
+      const onDequeue = (): void => {
+        if (encoder.state === 'closed' || encoder.encodeQueueSize <= limit) {
+          encoder.removeEventListener('dequeue', onDequeue)
+          if (encoder.state === 'closed')
+            reject(this._error ?? new Error('Encoder closed'))
+          else
+            resolve()
+        }
+      }
+      encoder.addEventListener('dequeue', onDequeue)
+      onDequeue()
+    })
+  }
+
   protected _updateProgress(): void {
     const total = this._videoQueueSize + this._audioQueueSize
-    const current = this._videoEncoder.encodeQueueSize + this._audioEncoder.encodeQueueSize
+    const current = this._videoEncoder.encodeQueueSize + (this._audioEncoder?.encodeQueueSize ?? 0)
     this._options.onProgress?.(total - current, total)
   }
 }

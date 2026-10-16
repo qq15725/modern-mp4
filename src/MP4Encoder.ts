@@ -7,7 +7,6 @@ import {
   MP4EncodeTransformer,
   MP4MuxTransformer,
 } from './transformers'
-import { readStream } from './utils'
 
 export interface MP4EncoderOptions extends MP4EncodeTransformerOptions, MP4MuxTransformerOptions {
   //
@@ -16,7 +15,7 @@ export interface MP4EncoderOptions extends MP4EncodeTransformerOptions, MP4MuxTr
 export type MP4EncoderEncodeSource = MP4EncodeTransformerInput
 
 export class MP4Encoder {
-  protected _controler?: ReadableStreamDefaultController<MP4EncoderEncodeSource>
+  protected _writer: WritableStreamDefaultWriter<MP4EncoderEncodeSource>
 
   readable: ReadableStream
 
@@ -31,11 +30,9 @@ export class MP4Encoder {
         options.height = Math.floor(options.height / 2) * 2
       }
     }
-    this.readable = new ReadableStream({
-      start: controler => this._controler = controler,
-    })
-      .pipeThrough(new MP4EncodeTransformer(options))
-      .pipeThrough(new MP4MuxTransformer(options))
+    const encoder = new MP4EncodeTransformer(options)
+    this._writer = encoder.writable.getWriter()
+    this.readable = encoder.readable.pipeThrough(new MP4MuxTransformer(options))
   }
 
   static isConfigSupported(options?: MP4EncoderOptions): Promise<boolean> {
@@ -43,17 +40,48 @@ export class MP4Encoder {
   }
 
   async encode(frame: MP4EncoderEncodeSource): Promise<void> {
-    await this._controler?.enqueue(frame)
+    await this._writer.write(frame)
   }
 
-  flush(): Promise<Blob> {
-    return new Promise((resolve) => {
-      let result: ArrayBuffer
-      readStream(this.readable, {
-        onRead: _result => result = _result,
-        onDone: () => resolve(new Blob([result], { type: 'video/MP4' })),
-      })
-      this._controler?.close()
-    })
+  /** 将混音后的 PCM 分块编码，时间戳使用样本位置计算，避免累积舍入误差。 */
+  async encodeAudioBuffer(buffer: AudioBuffer, start = 0, end = buffer.length): Promise<void> {
+    for (let offset = start; offset < end; offset += 1024) {
+      const count = Math.min(1024, end - offset)
+      const data = new Float32Array(count * buffer.numberOfChannels)
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++)
+        data.set(buffer.getChannelData(channel).subarray(offset, offset + count), channel * count)
+      await this.encode(new AudioData({
+        format: 'f32-planar',
+        sampleRate: buffer.sampleRate,
+        numberOfChannels: buffer.numberOfChannels,
+        numberOfFrames: count,
+        timestamp: Math.round(offset * 1_000_000 / buffer.sampleRate),
+        data,
+      }))
+    }
+  }
+
+  async flush(): Promise<Blob> {
+    const reader = this.readable.getReader()
+    const chunks: ArrayBuffer[] = []
+    const reading = (async () => {
+      try {
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done)
+            break
+          chunks.push(value)
+        }
+      }
+      finally {
+        reader.releaseLock()
+      }
+    })()
+    await Promise.all([this._writer.close(), reading])
+    return new Blob(chunks, { type: 'video/mp4' })
+  }
+
+  async abort(reason?: unknown): Promise<void> {
+    await Promise.allSettled([this._writer.abort(reason), this.readable.cancel(reason)])
   }
 }
