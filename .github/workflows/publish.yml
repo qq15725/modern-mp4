@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -16,10 +20,10 @@ jobs:
           fetch-depth: 0
       - name: 🎉 Install pnpm
         uses: pnpm/action-setup@v4
-      - name: 🎉 Set node version to lts
+      - name: 🎉 Set node version to 24
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           registry-url: https://registry.npmjs.org/
           cache: pnpm
       - name: 🚧 Install deps
@@ -27,6 +31,11 @@ jobs:
       - name: 📦 Build
         run: pnpm run build
       - name: 🔀 Publish package
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -o pipefail
+          npm publish --access public 2>&1 | tee "$RUNNER_TEMP/npm-publish.log" || {
+            while IFS= read -r line; do
+              echo "::error::${line//%/%25}"
+            done < <(grep '^npm error' "$RUNNER_TEMP/npm-publish.log" | head -20)
+            exit 1
+          }
