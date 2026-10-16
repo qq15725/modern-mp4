@@ -1,0 +1,37 @@
+name: 检查 npm 发布结果
+
+on:
+  push:
+    branches: [diagnose/mp4-release-status]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 读取发布日志摘要
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import os, re, urllib.request, urllib.error
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+          url = 'https://api.github.com/repos/qq15725/modern-mp4/actions/jobs/116855237263/logs'
+          req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+          try:
+              data = urllib.request.build_opener(NoRedirect()).open(req).read()
+          except urllib.error.HTTPError as error:
+              if error.code != 302:
+                  raise
+              data = urllib.request.urlopen(error.headers['Location']).read()
+          for line in data.decode().splitlines():
+              line = re.sub(r'^\S+\s+', '', line)
+              if re.search(r'^\+ modern-mp4@|^npm (notice|warn|error).*(Publishing|publish|scann|pending|review|hold|approv|provenance)', line, re.I):
+                  safe = line.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+                  print('::notice::' + safe)
+          PY
