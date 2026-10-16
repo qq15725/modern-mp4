@@ -30,7 +30,14 @@ jobs:
                   break
               except urllib.error.HTTPError as error:
                   if error.code == 302:
-                      data = urllib.request.urlopen(error.headers['Location']).read()
+                      try:
+                          data = urllib.request.urlopen(error.headers['Location']).read()
+                      except urllib.error.HTTPError as download_error:
+                          if download_error.code not in (404, 410):
+                              print('::error::日志归档下载返回 HTTP ' + str(download_error.code), flush=True)
+                              raise
+                          time.sleep(10)
+                          continue
                       break
                   if error.code not in (400, 404, 410):
                       print('::error::GitHub 日志接口返回 HTTP ' + str(error.code), flush=True)
