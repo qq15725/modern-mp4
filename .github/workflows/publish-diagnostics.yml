@@ -32,7 +32,8 @@ jobs:
                   if error.code == 302:
                       data = urllib.request.urlopen(error.headers['Location']).read()
                       break
-                  if error.code not in (404, 410):
+                  if error.code not in (400, 404, 410):
+                      print('::error::GitHub 日志接口返回 HTTP ' + str(error.code), flush=True)
                       raise
                   print('等待 GitHub 提供本次发布任务的日志', flush=True)
                   time.sleep(10)
